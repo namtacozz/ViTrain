@@ -1,6 +1,6 @@
 import type { TeamMember, PokemonSpecies, PokemonType } from '../../types/pokemon';
 import typeChartData from '../../data/type-chart.json';
-import pokemonData from '../../data/pokemon.json';
+import { getPokemonById } from '../data/pokemonCache';
 
 export interface TeamAnalysisResult {
   weaknesses: Record<PokemonType, number>;
@@ -25,9 +25,6 @@ export function analyzeTeam(team: TeamMember[]): TeamAnalysisResult {
   });
 
   const activeMembers = team.filter(m => m !== null);
-  if (activeMembers.length === 0) return result;
-
-  const db = pokemonData as PokemonSpecies[];
 
   // Early return for empty team
   if (activeMembers.length === 0) return result;
@@ -39,7 +36,7 @@ export function analyzeTeam(team: TeamMember[]): TeamAnalysisResult {
   let specialCount = 0;
 
   activeMembers.forEach(member => {
-    const species = db.find(p => p.id === member.speciesId);
+    const species = getPokemonById(member.speciesId);
     if (!species) return;
 
     // Calculate defensive profile based on base typing (ignoring Tera for base analysis, or we could factor Tera in if it's set)

@@ -1,6 +1,6 @@
 import type { BattleState, BattleSlotState } from './battleState';
-import pokemonData from '../../data/pokemon.json';
 import { metaPresets } from '../data/metaPresets';
+import { getPokemonById } from '../data/pokemonCache';
 import type { PokemonSpecies } from '../../types/pokemon';
 
 // Types
@@ -16,8 +16,6 @@ export interface PredictedAction {
   reason: string;
 }
 
-const db = pokemonData as PokemonSpecies[];
-
 /**
  * Guesses the opponent's build (moves, item, ability) based on the meta and what they have revealed.
  */
@@ -25,8 +23,8 @@ export function guessOpponentBuild(speciesId: string, memory: OpponentMemory) {
   const revealedMoves = memory.revealedMoves[speciesId] || [];
   const revealedItem = memory.revealedItem[speciesId];
   const revealedAbility = memory.revealedAbility[speciesId];
-  
-  const species = db.find(p => p.id === speciesId);
+
+  const species = getPokemonById(speciesId);
   if (!species) return null;
 
   // Use most-used preset (sorted by usage desc, first entry)
