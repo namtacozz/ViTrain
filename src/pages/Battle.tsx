@@ -242,20 +242,12 @@ export default function Battle() {
         {/* Main Board Area */}
         <div className="lg:col-span-8 space-y-4">
           
-          <div className="border rounded-2xl p-4 md:p-6 bg-card relative overflow-hidden flex flex-col justify-between min-h-[400px]">
+          <div className="border rounded-2xl p-4 md:p-6 bg-card relative overflow-hidden">
             {/* Background design */}
             <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
-            {/* Field Conditions Bar */}
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-center z-10 pointer-events-auto">
-              <FieldConditionBar 
-                field={battleState.field} 
-                onUpdateField={(updates) => setBattleState(prev => prev ? { ...prev, field: { ...prev.field, ...updates } } : prev)} 
-              />
-            </div>
-
             {/* Opponent Side */}
-            <div className="flex justify-around gap-4 items-start z-10">
+            <div className="flex justify-around gap-4 items-start z-10 relative">
               <div className="w-1/2 max-w-[280px]">
                 <BattleSlot 
                   slotState={battleState.oppSlots[0]} side="opponent" label="OPP A" bench={battleState.oppBench}
@@ -298,8 +290,16 @@ export default function Battle() {
               </div>
             </div>
 
+            {/* Field Conditions Bar - Between sides, no longer absolute */}
+            <div className="flex justify-center z-10 my-6 relative">
+              <FieldConditionBar
+                field={battleState.field}
+                onUpdateField={(updates) => setBattleState(prev => prev ? { ...prev, field: { ...prev.field, ...updates } } : prev)}
+              />
+            </div>
+
             {/* My Side */}
-            <div className="flex justify-around gap-4 items-end mt-12 z-10">
+            <div className="flex justify-around gap-4 items-end z-10 relative">
               <div className="w-1/2 max-w-[280px]">
                 <BattleSlot 
                   slotState={battleState.mySlots[0]} side="mine" label="MY A" bench={battleState.myBench}
