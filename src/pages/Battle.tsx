@@ -42,15 +42,17 @@ export default function Battle() {
       }
       setMyTeamFull(myTeam);
 
+      // Opponent param is now optional - can start battle without opponent
       if (opponentParam) {
         const oppIds = opponentParam.split(',');
         oppTeam = oppIds.map(id => pokemonDb.find(p => p.id === id)).filter(Boolean) as PokemonSpecies[];
       }
       setOppTeamFull(oppTeam);
 
+      // Initialize battle even without opponent team
       if (myTeam.length > 0) {
         const myLeads = leadParam ? leadParam.split(',') : myTeam.slice(0, 2).map(p => p.speciesId);
-        const oppLeads = oppTeam.slice(0, 2).map(p => p.id);
+        const oppLeads = oppTeam.length > 0 ? oppTeam.slice(0, 2).map(p => p.id) : [];
         setBattleState(initBattleState(myTeam, oppTeam, myLeads, oppLeads));
       }
     }
@@ -187,7 +189,45 @@ export default function Battle() {
     });
   };
 
-  // Record opponent item reveal  
+  // Add opponent Pokemon dynamically during battle
+  const handleAddOpponent = (slotIndex: 0 | 1, pokemon: PokemonSpecies) => {
+    setBattleState(prev => {
+      if (!prev) return prev;
+      const newState = structuredClone(prev);
+
+      // Add to bench if not already there
+      if (!newState.oppBench.some(p => p.id === pokemon.id) &&
+          !newState.oppSlots.some(s => s.pokemon?.id === pokemon.id)) {
+        newState.oppBench.push(pokemon);
+      }
+
+      // Set in slot
+      newState.oppSlots[slotIndex] = {
+        pokemon,
+        currentHpPercent: 100,
+        status: null,
+        boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 },
+        isProtected: false,
+        isFainted: false,
+        usedMoves: [],
+        turnsOnField: 0
+      };
+
+      // Log it
+      const log = createLogEntry(newState.turnNumber, 'switch', '', `${pokemon.name} appeared!`, 'opponent');
+      newState.turnLog = [log, ...newState.turnLog];
+
+      return newState;
+    });
+
+    // Update full team list
+    setOppTeamFull(prev => {
+      if (prev.some(p => p.id === pokemon.id)) return prev;
+      return [...prev, pokemon];
+    });
+  };
+
+  // Record opponent item reveal
   const handleRevealOppItem = (slotIndex: 0 | 1, item: string) => {
     setBattleState(prev => {
       if (!prev) return prev;
