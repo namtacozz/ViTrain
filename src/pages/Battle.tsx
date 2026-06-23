@@ -289,7 +289,7 @@ export default function Battle() {
             {/* Opponent Side */}
             <div className="flex justify-around gap-4 items-start z-10 relative">
               <div className="w-1/2 max-w-[280px]">
-                <BattleSlot 
+                <BattleSlot
                   slotState={battleState.oppSlots[0]} side="opponent" label="OPP A" bench={battleState.oppBench}
                   onSwap={(id) => handleSwap('opp', 0, id)}
                   onHpChange={(hp) => updateSlot('oppSlots', 0, { currentHpPercent: hp })}
@@ -301,6 +301,7 @@ export default function Battle() {
                   predictedMoves={oppPred0?.likelyMoves}
                   onRevealMove={(m) => handleRevealOppMove(0, m)}
                   onRevealItem={(item) => handleRevealOppItem(0, item)}
+                  onAddOpponent={(pokemon) => handleAddOpponent(0, pokemon)}
                 />
                 {nextActions.slot0.length > 0 && (
                   <div className="mt-2 text-xs bg-black/20 p-2 rounded border border-orange-500/20">
@@ -309,7 +310,7 @@ export default function Battle() {
                 )}
               </div>
               <div className="w-1/2 max-w-[280px]">
-                <BattleSlot 
+                <BattleSlot
                   slotState={battleState.oppSlots[1]} side="opponent" label="OPP B" bench={battleState.oppBench}
                   onSwap={(id) => handleSwap('opp', 1, id)}
                   onHpChange={(hp) => updateSlot('oppSlots', 1, { currentHpPercent: hp })}
@@ -321,6 +322,7 @@ export default function Battle() {
                   predictedMoves={oppPred1?.likelyMoves}
                   onRevealMove={(m) => handleRevealOppMove(1, m)}
                   onRevealItem={(item) => handleRevealOppItem(1, item)}
+                  onAddOpponent={(pokemon) => handleAddOpponent(1, pokemon)}
                 />
                 {nextActions.slot1.length > 0 && (
                   <div className="mt-2 text-xs bg-black/20 p-2 rounded border border-orange-500/20">
