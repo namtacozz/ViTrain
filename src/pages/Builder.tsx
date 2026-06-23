@@ -1,21 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import type { TeamMember, PokemonSpecies } from '../types/pokemon';
 import TeamSlotGrid from '../components/builder/TeamSlotGrid';
 import PokemonSearchModal from '../components/builder/PokemonSearchModal';
 import PokemonDetailPanel from '../components/builder/PokemonDetailPanel';
 import TeamAnalysis from '../components/builder/TeamAnalysis';
 import pokemonData from '../data/pokemon.json';
-import { saveTeam } from '../lib/db/localTeams';
+import { saveTeam, getTeam } from '../lib/db/localTeams';
 import { useNavigate } from 'react-router-dom';
-import { Save, Trash2, PlusCircle } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 
 export default function Builder() {
   const navigate = useNavigate();
+  const { teamId: editTeamId } = useParams<{ teamId?: string }>();
+  const [teamId, setTeamId] = useState<string | null>(editTeamId || null);
   const [team, setTeam] = useState<(TeamMember | null)[]>(Array(6).fill(null));
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [teamName, setTeamName] = useState('My VGC Team');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // Load existing team if editing
+  useEffect(() => {
+    if (editTeamId) {
+      getTeam(editTeamId).then(existingTeam => {
+        if (existingTeam) {
+          setTeam([...existingTeam.pokemon, ...Array(6 - existingTeam.pokemon.length).fill(null)]);
+          setTeamName(existingTeam.name);
+          setTeamId(existingTeam.id);
+        }
+      });
+    }
+  }, [editTeamId]);
 
   const handleSelectSlot = (index: number) => {
     setSelectedIndex(index);
@@ -60,7 +76,8 @@ export default function Builder() {
     if (activeMembers.length === 0) return;
     setSaveStatus('saving');
     try {
-      const id = crypto.randomUUID();
+      // Use existing teamId if editing, otherwise generate new
+      const id = teamId ?? crypto.randomUUID();
       await saveTeam({
         id,
         name: teamName,
@@ -68,6 +85,7 @@ export default function Builder() {
         pokemon: activeMembers,
         createdAt: Date.now(),
       });
+      setTeamId(id); // Track ID for future saves
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
