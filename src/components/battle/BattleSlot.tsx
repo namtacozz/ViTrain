@@ -4,6 +4,8 @@ import { PokemonSprite } from '../PokemonSprite';
 import { TypeBadge } from '../TypeBadge';
 import { Shield, Skull } from 'lucide-react';
 import pokemonData from '../../data/pokemon.json';
+import PokemonSearchModal from '../builder/PokemonSearchModal';
+import { useState } from 'react';
 
 const pokemonDb = pokemonData as PokemonSpecies[];
 
@@ -22,16 +24,44 @@ interface BattleSlotProps {
   predictedMoves?: string[];
   onRevealMove?: (move: string) => void;
   onRevealItem?: (item: string) => void;
+  onAddOpponent?: (pokemon: PokemonSpecies) => void;
 }
 
 export default function BattleSlot({
   slotState, side, label, bench, onSwap, onHpChange, onToggleProtect, onStatusChange, onFaintToggle,
-  predictedItem, predictedAbility, predictedMoves, onRevealMove, onRevealItem
+  predictedItem, predictedAbility, predictedMoves, onRevealMove, onRevealItem, onAddOpponent
 }: BattleSlotProps) {
   const pokemon = slotState.pokemon;
   const isMine = side === 'mine';
+  const [showAddModal, setShowAddModal] = useState(false);
 
   if (!pokemon) {
+    // For opponent slots, show "Add Pokemon" button
+    if (!isMine && onAddOpponent) {
+      return (
+        <>
+          <div
+            className="w-full h-full min-h-[160px] border-2 border-dashed rounded-xl flex flex-col items-center justify-center bg-orange-950/10 border-orange-500/30 hover:border-orange-500/60 transition-all cursor-pointer group"
+            onClick={() => setShowAddModal(true)}
+          >
+            <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">➕</div>
+            <span className="text-xs text-muted-foreground">Add Opponent</span>
+            <span className="text-xs text-orange-400 font-semibold">{label}</span>
+          </div>
+          {showAddModal && (
+            <PokemonSearchModal
+              isOpen={showAddModal}
+              onClose={() => setShowAddModal(false)}
+              onSelect={(pokemon) => {
+                onAddOpponent(pokemon as PokemonSpecies);
+                setShowAddModal(false);
+              }}
+            />
+          )}
+        </>
+      );
+    }
+
     return (
       <div className={`w-full h-full min-h-[160px] border-2 border-dashed rounded-xl flex items-center justify-center bg-secondary/20 ${isMine ? 'border-blue-500/30' : 'border-orange-500/30'}`}>
         <span className="text-xs text-muted-foreground">Empty Slot</span>
