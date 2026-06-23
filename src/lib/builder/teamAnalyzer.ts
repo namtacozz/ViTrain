@@ -1,4 +1,4 @@
-import type { TeamMember, PokemonSpecies, PokemonType } from '../../types/pokemon';
+import type { TeamMember, PokemonType } from '../../types/pokemon';
 import typeChartData from '../../data/type-chart.json';
 import { getPokemonById } from '../data/pokemonCache';
 

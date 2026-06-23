@@ -1,7 +1,6 @@
 import type { BattleState, BattleSlotState } from './battleState';
 import { metaPresets } from '../data/metaPresets';
 import { getPokemonById } from '../data/pokemonCache';
-import type { PokemonSpecies } from '../../types/pokemon';
 
 // Types
 export interface OpponentMemory {
