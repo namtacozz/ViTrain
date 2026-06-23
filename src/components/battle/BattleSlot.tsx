@@ -128,6 +128,7 @@ export default function BattleSlot({
               <option value="sleep">SLP</option>
               <option value="freeze">FRZ</option>
               <option value="poison">PSN</option>
+              <option value="toxic">TOX</option>
             </select>
 
             {/* Protect Toggle */}

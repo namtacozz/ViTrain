@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import pokemonData from '../data/pokemon.json';
 import type { PokemonSpecies } from '../types/pokemon';
@@ -16,11 +16,11 @@ export default function PokemonAutocomplete({ onSelect, placeholder = "Search Po
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Fuse.js for search
-  const fuse = new Fuse(pokemonData as PokemonSpecies[], {
+  // Initialize Fuse.js for search (memoized to prevent recreation)
+  const fuse = useMemo(() => new Fuse(pokemonData as PokemonSpecies[], {
     keys: ['name', 'aliases'],
     threshold: 0.4,
-  });
+  }), []);
 
   useEffect(() => {
     if (query.trim() === '') {
@@ -30,7 +30,7 @@ export default function PokemonAutocomplete({ onSelect, placeholder = "Search Po
     const results = fuse.search(query).map(r => r.item);
     setSuggestions(results.slice(0, 5));
     setSelectedIndex(0);
-  }, [query]);
+  }, [query, fuse]);
 
   // Handle clicking outside to close
   useEffect(() => {
@@ -44,12 +44,14 @@ export default function PokemonAutocomplete({ onSelect, placeholder = "Search Po
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (suggestions.length === 0) return;
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex(prev => (prev + 1) % Math.max(1, suggestions.length));
+      setSelectedIndex(prev => (prev + 1) % suggestions.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex(prev => (prev - 1 + suggestions.length) % Math.max(1, suggestions.length));
+      setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (suggestions[selectedIndex]) {

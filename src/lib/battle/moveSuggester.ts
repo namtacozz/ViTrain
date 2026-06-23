@@ -2,9 +2,7 @@ import type { BattleState } from './battleState';
 import { getMoveData } from './moveDatabase';
 import { estimateDamage, getEffectiveSpeed } from './matchup';
 import type { PokemonSpecies, TeamMember } from '../../types/pokemon';
-import pokemonData from '../../data/pokemon.json';
-
-const pokemonDb = pokemonData as PokemonSpecies[];
+import { getPokemonById } from '../data/pokemonCache';
 
 export interface MoveSuggestion {
   moveName: string;
@@ -18,7 +16,7 @@ export interface MoveSuggestion {
 
 function getSpecies(pokemon: TeamMember | PokemonSpecies): PokemonSpecies | undefined {
   if ('speciesId' in pokemon) {
-    return pokemonDb.find(p => p.id === pokemon.speciesId);
+    return getPokemonById(pokemon.speciesId);
   }
   return pokemon;
 }

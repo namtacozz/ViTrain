@@ -29,7 +29,10 @@ export function getSettings(): AppSettings {
   if (!stored) return defaultSettings;
   try {
     return { ...defaultSettings, ...JSON.parse(stored) };
-  } catch {
+  } catch (err) {
+    console.error('Failed to parse settings, backing up corrupted data:', err);
+    // Backup corrupted settings before resetting
+    localStorage.setItem(SETTINGS_KEY + '_backup_' + Date.now(), stored);
     return defaultSettings;
   }
 }

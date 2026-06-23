@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getTeam } from '../lib/db/localTeams';
 import pokemonData from '../data/pokemon.json';
@@ -72,7 +72,8 @@ export default function Battle() {
   const updateSlot = (side: 'mySlots' | 'oppSlots', index: 0 | 1, updates: Partial<BattleSlotState>) => {
     setBattleState(prev => {
       if (!prev) return prev;
-      const newState = { ...prev };
+      // Deep clone to prevent race conditions with concurrent updates
+      const newState = structuredClone(prev);
       newState[side][index] = { ...newState[side][index], ...updates };
       return newState;
     });
@@ -81,14 +82,14 @@ export default function Battle() {
   const handleSwap = (side: 'mine' | 'opp', index: 0 | 1, targetId: string) => {
     setBattleState(prev => {
       if (!prev) return prev;
-      const newState = { ...prev };
+      const newState = structuredClone(prev);
       const slots = side === 'mine' ? newState.mySlots : newState.oppSlots;
       const bench = side === 'mine' ? newState.myBench : newState.oppBench;
       
       const currentPokemon = slots[index].pokemon;
       
       // Find new pokemon from bench
-      const newIdx = bench.findIndex(p => p.id === targetId);
+      const newIdx = bench.findIndex((p: TeamMember | PokemonSpecies) => p.id === targetId);
       if (newIdx === -1) return prev;
       
       const newPokemon = bench[newIdx];
@@ -124,7 +125,7 @@ export default function Battle() {
   const handleFaint = (side: 'mine' | 'opp', index: 0 | 1) => {
     setBattleState(prev => {
       if (!prev) return prev;
-      const newState = { ...prev };
+      const newState = structuredClone(prev);
       const slot = side === 'mine' ? newState.mySlots[index] : newState.oppSlots[index];
       
       if (!slot.pokemon) return prev;
@@ -168,24 +169,21 @@ export default function Battle() {
   const handleRevealOppMove = (slotIndex: 0 | 1, move: string) => {
     setBattleState(prev => {
       if (!prev) return prev;
-      const slot = prev.oppSlots[slotIndex];
+      const newState = structuredClone(prev);
+      const slot = newState.oppSlots[slotIndex];
       if (!slot.pokemon) return prev;
       const speciesId = slot.pokemon.id;
-      const newMemory = { ...prev.oppMemory };
-      const existing = newMemory.revealedMoves[speciesId] || [];
+      const existing = newState.oppMemory.revealedMoves[speciesId] || [];
       if (!existing.includes(move)) {
-        newMemory.revealedMoves = {
-          ...newMemory.revealedMoves,
-          [speciesId]: [...existing, move]
-        };
+        newState.oppMemory.revealedMoves[speciesId] = [...existing, move];
       }
       // Also update slot usedMoves and log it
-      const newSlots = [...prev.oppSlots] as typeof prev.oppSlots;
-      if (!newSlots[slotIndex].usedMoves.includes(move)) {
-        newSlots[slotIndex] = { ...newSlots[slotIndex], usedMoves: [...newSlots[slotIndex].usedMoves, move] };
+      if (!newState.oppSlots[slotIndex].usedMoves.includes(move)) {
+        newState.oppSlots[slotIndex].usedMoves = [...newState.oppSlots[slotIndex].usedMoves, move];
       }
-      const log = createLogEntry(prev.turnNumber, 'attack', slot.pokemon.name, `Used ${move}`, 'opponent');
-      return { ...prev, oppMemory: newMemory, oppSlots: newSlots, turnLog: [log, ...prev.turnLog] };
+      const log = createLogEntry(newState.turnNumber, 'attack', slot.pokemon.name, `Used ${move}`, 'opponent');
+      newState.turnLog = [log, ...newState.turnLog];
+      return newState;
     });
   };
 
@@ -193,28 +191,36 @@ export default function Battle() {
   const handleRevealOppItem = (slotIndex: 0 | 1, item: string) => {
     setBattleState(prev => {
       if (!prev) return prev;
-      const slot = prev.oppSlots[slotIndex];
+      const newState = structuredClone(prev);
+      const slot = newState.oppSlots[slotIndex];
       if (!slot.pokemon) return prev;
       const speciesId = slot.pokemon.id;
-      const newMemory = { 
-        ...prev.oppMemory, 
-        revealedItem: { ...prev.oppMemory.revealedItem, [speciesId]: item }
-      };
-      return { ...prev, oppMemory: newMemory };
+      newState.oppMemory.revealedItem[speciesId] = item;
+      return newState;
     });
   };
 
-  const mySugsA = suggestMoves(0, battleState);
-  const mySugsB = suggestMoves(1, battleState);
+  // Memoize expensive move suggestions to prevent recalculation on every render
+  const mySugsA = useMemo(() => suggestMoves(0, battleState), [battleState]);
+  const mySugsB = useMemo(() => suggestMoves(1, battleState), [battleState]);
 
-  // Predictions
-  const oppPred0 = battleState.oppSlots[0].pokemon 
-    ? guessOpponentBuild(battleState.oppSlots[0].pokemon.id, battleState.oppMemory) 
-    : null;
-  const oppPred1 = battleState.oppSlots[1].pokemon 
-    ? guessOpponentBuild(battleState.oppSlots[1].pokemon.id, battleState.oppMemory) 
-    : null;
-  const nextActions = predictNextActions(battleState, battleState.oppMemory);
+  // Memoize predictions
+  const oppPred0 = useMemo(() =>
+    battleState.oppSlots[0].pokemon
+      ? guessOpponentBuild(battleState.oppSlots[0].pokemon.id, battleState.oppMemory)
+      : null,
+    [battleState.oppSlots[0].pokemon, battleState.oppMemory]
+  );
+  const oppPred1 = useMemo(() =>
+    battleState.oppSlots[1].pokemon
+      ? guessOpponentBuild(battleState.oppSlots[1].pokemon.id, battleState.oppMemory)
+      : null,
+    [battleState.oppSlots[1].pokemon, battleState.oppMemory]
+  );
+  const nextActions = useMemo(() =>
+    predictNextActions(battleState, battleState.oppMemory),
+    [battleState, battleState.oppMemory]
+  );
 
   return (
     <div className="space-y-6 pb-20">

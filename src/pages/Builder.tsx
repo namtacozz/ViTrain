@@ -11,7 +11,7 @@ import { Save, Trash2, PlusCircle } from 'lucide-react';
 
 export default function Builder() {
   const navigate = useNavigate();
-  const [team, setTeam] = useState<TeamMember[]>(Array(6).fill(null));
+  const [team, setTeam] = useState<(TeamMember | null)[]>(Array(6).fill(null));
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [teamName, setTeamName] = useState('My VGC Team');
@@ -50,7 +50,7 @@ export default function Builder() {
 
   const handleClearSlot = (index: number) => {
     const newTeam = [...team];
-    (newTeam as (TeamMember | null)[])[index] = null;
+    newTeam[index] = null;
     setTeam(newTeam);
     if (selectedIndex === index) setSelectedIndex(null);
   };
@@ -70,7 +70,8 @@ export default function Builder() {
       });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch {
+    } catch (err) {
+      console.error('Failed to save team:', err);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }

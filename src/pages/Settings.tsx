@@ -13,14 +13,30 @@ export default function Settings() {
   }, []);
 
   const updateSetting = (key: keyof AppSettings, value: any) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettingsState(newSettings);
-    saveSettings(newSettings);
+    // Use functional update to prevent race conditions
+    setSettingsState(prev => {
+      const updated = { ...prev, [key]: value };
+      saveSettings(updated);
+      return updated;
+    });
   };
 
-  const clearData = () => {
+  const clearData = async () => {
     if (confirm('Are you sure you want to delete all saved teams and settings? This cannot be undone.')) {
-      localStorage.clear();
+      // Only clear app-specific data, not entire localStorage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('pokemon-champions-') || key === 'PokemonChampionsDB')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Clear IndexedDB
+      const { db } = await import('../lib/db/localTeams');
+      await db.delete();
+
       window.location.reload();
     }
   };

@@ -1,11 +1,10 @@
 import type { TeamMember, PokemonSpecies } from '../../types/pokemon';
-import pokemonData from '../../data/pokemon.json';
 import { getTypeEffectiveness } from '../battle/matchup';
+import { getPokemonById } from '../data/pokemonCache';
 
 // Helper to get full species info
-const pokemonDb = pokemonData as PokemonSpecies[];
 function getSpecies(id: string): PokemonSpecies | undefined {
-  return pokemonDb.find(p => p.id === id);
+  return getPokemonById(id);
 }
 
 export type Archetype = 'sun' | 'rain' | 'trick-room' | 'tailwind' | 'sand' | 'balance';
