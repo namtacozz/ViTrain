@@ -29,6 +29,9 @@ export function analyzeTeam(team: TeamMember[]): TeamAnalysisResult {
 
   const db = pokemonData as PokemonSpecies[];
 
+  // Early return for empty team
+  if (activeMembers.length === 0) return result;
+
   let protectCount = 0;
   let speedControlCount = 0;
   let fakeOutCount = 0;

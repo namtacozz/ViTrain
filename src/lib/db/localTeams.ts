@@ -6,8 +6,22 @@ export class TeamDatabase extends Dexie {
 
   constructor() {
     super('PokemonChampionsDB');
+
+    // Version 1: Initial schema
     this.version(1).stores({
-      teams: 'id, name, format, createdAt' // Primary key and indexed props
+      teams: 'id, createdAt' // Only index what we actually query
+    });
+
+    // Version 2: Add updatedAt field for future use
+    this.version(2).stores({
+      teams: 'id, createdAt, updatedAt'
+    }).upgrade(tx => {
+      // Migrate existing teams to add updatedAt
+      return tx.table('teams').toCollection().modify(team => {
+        if (!team.updatedAt) {
+          team.updatedAt = team.createdAt;
+        }
+      });
     });
   }
 }
@@ -15,7 +29,11 @@ export class TeamDatabase extends Dexie {
 export const db = new TeamDatabase();
 
 export async function saveTeam(team: Team) {
-  return await db.teams.put(team);
+  const teamWithTimestamp = {
+    ...team,
+    updatedAt: Date.now()
+  };
+  return await db.teams.put(teamWithTimestamp);
 }
 
 export async function getTeams() {
